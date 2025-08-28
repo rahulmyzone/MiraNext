@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Activity, DollarSign, BarChart3, Settings, RefreshCw, X, Edit2, PieChart, History, Home, Building2, AlertCircle, CheckCircle, Moon, Sun, Plus } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar } from 'recharts';
+import { ThemeProvider } from './src/styles/ThemeContext';
 
 // API Service Layer
 class TradingAPI {
@@ -1459,4 +1460,10 @@ const TradingDashboard = () => {
   );
 };
 
-export default TradingDashboard;
+const DashboardPage = () => (
+  <ThemeProvider>
+    <TradingDashboard />
+  </ThemeProvider>
+);
+
+export default DashboardPage;
