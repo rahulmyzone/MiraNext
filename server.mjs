@@ -2,6 +2,8 @@ import express from 'express';
 import next from 'next';
 import cors from "cors";
 import DBService from "./app/db/DBService.js";
+import {fetchExternal} from './app/services/UtilityServices.js';
+import appconfig from './app/app-config.js';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -20,10 +22,11 @@ app.prepare().then(() => {
   // Create a router for /api/v1
   const apiRouter = express.Router();
   const dataRouter = express.Router();
+  const appsScriptRouter = express.Router();
 
   // Generic CRUD routes for any entity
   // Read all
-  apiRouter.get('/:entity', async (req, res) => {
+  apiRouter.get('/db/:entity', async (req, res) => {
     const { entity } = req.params;
     try {
       const result = await DBService.findDataFromDB({}, entity);
@@ -41,7 +44,7 @@ app.prepare().then(() => {
   });
 
   // Read one
-  apiRouter.get('/:entity/:id', async (req, res) => {
+  apiRouter.get('/db/:entity/:id', async (req, res) => {
     const { entity, id } = req.params;
     try {
       const result = await DBService.findDataFromDB({ id }, entity);
@@ -56,7 +59,7 @@ app.prepare().then(() => {
   });
 
   // Create
-  apiRouter.post('/:entity', async (req, res) => {
+  apiRouter.post('/db/:entity', async (req, res) => {
     const { entity } = req.params;
     try {
       const result = await DBService.createDataInDB(req.body, entity);
@@ -71,7 +74,7 @@ app.prepare().then(() => {
   });
 
   // Bulk create: POST /:entity/bulk
-  apiRouter.post('/:entity/bulk', async (req, res) => {
+  apiRouter.post('/db/:entity/bulk', async (req, res) => {
     const { entity } = req.params;
     const items = req.body;
     if (!Array.isArray(items)) {
@@ -94,7 +97,7 @@ app.prepare().then(() => {
   });
 
   // Update
-  apiRouter.put('/:entity/:id', async (req, res) => {
+  apiRouter.put('/db/:entity/:id', async (req, res) => {
     const { entity, id } = req.params;
     try {
       const result = await DBService.updateDataInDB(id, req.body, entity);
@@ -109,7 +112,7 @@ app.prepare().then(() => {
   });
 
   // Delete
-  apiRouter.delete('/:entity/:id', async (req, res) => {
+  apiRouter.delete('/db/:entity/:id', async (req, res) => {
     const { entity, id } = req.params;
     try {
       const result = await DBService.deleteDataFromDB(id, entity);
@@ -138,9 +141,20 @@ app.prepare().then(() => {
     }
   });
 
+  apiRouter.get('/load/:entity', async (req, res) => {
+    const { entity } = req.params;
+    try {
+      const result = await fetchExternal(`${appconfig.apps_script_url}?sheetName=${entity}&source=MIRA&reqType=fetch`);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // Use the router for /api/v1
   server.use('/api/v1', apiRouter);
   server.use('/api/gen',dataRouter);
+  server.use('/appsscript', appsScriptRouter);
 
   // Let Next.js handle everything else
   server.use((req, res) => {

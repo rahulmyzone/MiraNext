@@ -30,6 +30,10 @@ class TradingAPI {
     }
   }
 
+  async getDBTables() {
+    const params = '';
+    return this.request(`/load/DB_Tables`);
+  }
   // Position endpoints
   async getPositions(brokerFilter = null) {
     const params = brokerFilter ? `?broker=${encodeURIComponent(brokerFilter)}` : '';
@@ -108,7 +112,7 @@ const TradingDashboard = () => {
   const [isAddBrokerModalOpen, setIsAddBrokerModalOpen] = useState(false);
   const [isConfigureBrokerModalOpen, setIsConfigureBrokerModalOpen] = useState(false);
   const [selectedBrokerForConfig, setSelectedBrokerForConfig] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('All');
@@ -1062,6 +1066,9 @@ const TradingDashboard = () => {
     ]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAlgo, setEditingAlgo] = useState(null);
+    const [dbTables, setDbTables] = useState([]);
+    const [dbLoading, setDbLoading] = useState(false);
+    const [dbError, setDbError] = useState(null);
 
     // Open modal for add or edit
     const handleAdd = () => {
@@ -1096,6 +1103,28 @@ const TradingDashboard = () => {
       }
       setIsModalOpen(false);
       setEditingAlgo(null);
+    };
+
+    // Load database tables (mock implementation)
+    const handleLoadTables = async () => {
+      setDbLoading(true);
+      setDbError(null);
+      try {
+        // Replace with your actual DBService call
+        // Example: const tables = await DBService.listTables();
+        // For demo, simulate async fetch:
+        // const tables = await new Promise(resolve =>
+        //   setTimeout(() => resolve(['positions', 'brokers', 'portfolio_history', 'trade_history', 'users', 'settings']), 1200)
+        // );
+        debugger;
+        let tables = await api.getDBTables().then(res => res);
+        tables = tables.map(t => t.Name);
+        setDbTables(tables);
+      } catch (err) {
+        setDbError('Failed to load tables');
+      } finally {
+        setDbLoading(false);
+      }
     };
 
     // Configure Algorithm Modal (used for both add and edit)
@@ -1230,58 +1259,108 @@ const TradingDashboard = () => {
     };
 
     return (
-      <div className={`${themeClasses.cardBg} rounded-lg border ${themeClasses.border} p-6 max-w-2xl mx-auto`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-lg font-bold ${themeClasses.text}`}>Algorithm Configuration</h2>
-          <button
-            onClick={handleAdd}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Algorithm
-          </button>
-        </div>
-        <div className="space-y-4">
-          {algorithms.map(algo => (
-            <div key={algo.id} className={`flex items-center justify-between p-4 rounded border ${themeClasses.border} ${themeClasses.cardBg}`}>
-              <div>
-                <div className={`font-bold ${themeClasses.text}`}>{algo.name}</div>
-                <div className={`text-xs ${themeClasses.textSecondary}`}>Params: {JSON.stringify(algo.params)}</div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={algo.enabled}
-                    onChange={() => handleToggle(algo.id)}
-                    className="form-checkbox h-5 w-5 text-blue-600"
-                  />
-                  <span className={`ml-2 text-sm ${algo.enabled ? 'text-green-600' : themeClasses.textSecondary}`}>
-                    {algo.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </label>
-                <button
-                  onClick={() => handleEdit(algo)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                >
-                  Configure
-                </button>
-              </div>
+      <div className={`${themeClasses.cardBg} rounded-lg border ${themeClasses.border} p-6 max-w-4xl mx-auto`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Algorithm Configuration Panel */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className={`text-lg font-bold ${themeClasses.text}`}>Algorithm Configuration</h2>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Algorithm
+              </button>
             </div>
-          ))}
-          {algorithms.length === 0 && (
-            <div className={`text-center py-8 ${themeClasses.textSecondary}`}>
-              No algorithms configured.
+            <div className="space-y-4 mb-8">
+              {algorithms.map(algo => (
+                <div key={algo.id} className={`flex items-center justify-between p-4 rounded border ${themeClasses.border} ${themeClasses.cardBg}`}>
+                  <div>
+                    <div className={`font-bold ${themeClasses.text}`}>{algo.name}</div>
+                    <div className={`text-xs ${themeClasses.textSecondary}`}>Params: {JSON.stringify(algo.params)}</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={algo.enabled}
+                        onChange={() => handleToggle(algo.id)}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                      />
+                      <span className={`ml-2 text-sm ${algo.enabled ? 'text-green-600' : themeClasses.textSecondary}`}>
+                        {algo.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </label>
+                    <button
+                      onClick={() => handleEdit(algo)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                    >
+                      Configure
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {algorithms.length === 0 && (
+                <div className={`text-center py-8 ${themeClasses.textSecondary}`}>
+                  No algorithms configured.
+                </div>
+              )}
             </div>
-          )}
+            {isModalOpen && (
+              <ConfigureAlgorithmModal
+                algo={editingAlgo}
+                onSave={handleSaveAlgorithm}
+                onClose={() => setIsModalOpen(false)}
+              />
+            )}
+          </div>
+
+          {/* Database Tables Panel */}
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className={`text-lg font-bold ${themeClasses.text}`}>Database Tables</h2>
+              <button
+                onClick={handleLoadTables}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                disabled={dbLoading}
+              >
+                {dbLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Load Tables
+                  </>
+                )}
+              </button>
+            </div>
+            <div className={`rounded border ${themeClasses.border} ${themeClasses.cardBg} p-4`}>
+              {dbError && (
+                <div className="text-red-600 mb-2">{dbError}</div>
+              )}
+              <ul className="space-y-2">
+                {dbTables.length > 0 ? (
+                  dbTables.map(table => (
+                    <li key={table} className="flex items-center justify-between p-2 rounded hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors">
+                      <span className={`font-medium ${themeClasses.text}`}>{table}</span>
+                      <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                        Table
+                      </span>
+                    </li>
+                  ))
+                ) : (
+                  <li className={`text-center py-8 ${themeClasses.textSecondary}`}>
+                    No tables loaded. Click 'Load Tables' to fetch from database.
+                  </li>
+                )}
+              </ul>
+            </div>
+          </div>
         </div>
-        {isModalOpen && (
-          <ConfigureAlgorithmModal
-            algo={editingAlgo}
-            onSave={handleSaveAlgorithm}
-            onClose={() => setIsModalOpen(false)}
-          />
-        )}
       </div>
     );
   };
